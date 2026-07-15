@@ -170,6 +170,7 @@ const DynamicVoiceChat = ({
   const pendingNewChatRef = useRef(false)
   const pendingNewChatTimerRef = useRef(null)
   const sidebarBottomReachedRef = useRef(false)
+  const isLogoutNavigationRef = useRef(false)
 
   useEffect(() => {
     onProfileExtractedRef.current = onProfileExtracted
@@ -1153,6 +1154,7 @@ const DynamicVoiceChat = ({
 
     const currentFlow = storageFlow
     const handleBack = () => {
+      if (isLogoutNavigationRef.current) return
       if (currentFlow) {
         if (ssoNavigationTriggered && accessToken) {
           navigate(-2)
@@ -2530,10 +2532,11 @@ const DynamicVoiceChat = ({
 
   function handleConfirmLogout() {
     stopAllAudio()
-    const flowName = env.FLOW_NAME()
-    const search = flowName ? `?${new URLSearchParams({ flow: flowName }).toString()}` : ""
+    // sessionStorage survives clearFromStorage (which only resets Zustand stores)
+    const firstHomeHistoryLength = parseInt(sessionStorage.getItem("__first_home_history_length"), 10)
     clearFromStorage()
-    window.location.href = ROUTES.SHIKSHALOKAM_HOME_PAGE + search
+    isLogoutNavigationRef.current = true
+    navigate(-(window.history.length - firstHomeHistoryLength))
   }
 
   function processSidebarResults(results) {

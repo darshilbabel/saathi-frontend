@@ -89,6 +89,14 @@ function CommonHomePage({ usecaseType }) {
     isTncAccepted === false &&
     !isProfileLoading
 
+  // Record history length at first home page visit so logout can navigate back
+  // to this exact history entry. Only set once per session.
+  useEffect(() => {
+    if (!sessionStorage.getItem("__first_home_history_length")) {
+      sessionStorage.setItem("__first_home_history_length", String(window.history.length))
+    }
+  }, [])
+
   useEffect(() => {
     if (!isSaathiHome || !accessToken) return
 
