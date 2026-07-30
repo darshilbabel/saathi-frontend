@@ -200,7 +200,7 @@ const DynamicVoiceChat = ({
   const isInitialLoadRef = useRef(true)
   const endPageToScrollRef = useRef(null)
   const isIntroPlayed = useRef(false)
-  const pendingExtraContent = useRef(null)
+  const streamingBotMessageRef = useRef(null)
   const profileCompletedRef = useRef(false)
   const onProfileExtractedRef = useRef(onProfileExtracted)
   const pendingNewChatRef = useRef(false)
@@ -385,6 +385,11 @@ const DynamicVoiceChat = ({
     if (chat_history.filter(chat => chat.source === "user").length < 1) return
     if (!flowInfo) return
 
+    // Discard any partially accumulated text from the dropped connection.
+    // Without this, replay chunks from the server would append onto stale text
+    // and produce a corrupted duplicate entry in chatHistory.
+    streamingBotMessageRef.current = null
+
     sendSocketMessage({
       type: "authenticate",
       sessionid: sessionId,
@@ -403,15 +408,11 @@ const DynamicVoiceChat = ({
   const completeProfileExtraction = useCallback(() => {
     if (profileCompletedRef.current) return
     profileCompletedRef.current = true
-    pendingExtraContent.current = null
     setShowHomepage(false)
     setIsChatVisible(true)
     // Stop TTS from re-playing earlier sentences (audio queue flush).
     setSentences(prev => prev.map(s => ({ ...s, isNarrated: true })))
     // Write the thank-you bubble directly into chatHistory.
-    // Cannot go through sentences→TTS→handleMessagesForBot: that path requires
-    // isNarrated:false, but handleMessagesForBot also guards on
-    // profileCompletedRef.current which is already true at this point.
     // getChatHistory / setChatHistory are stable Zustand getState() refs — safe
     // to call inside a []‑dep callback.
     const currentHistory = getChatHistory()
@@ -459,11 +460,11 @@ const DynamicVoiceChat = ({
   
       if (message.source === "bot") {
         setIsStreamingComplete(false)
-  
+
         setSentences(prevSentences => {
           const updatedSentences = structuredClone(prevSentences)
           const lastSentence = updatedSentences[updatedSentences.length - 1]
-  
+
           if (lastSentence?.source === "bot") {
             if (message?.msg) {
               lastSentence.message += message?.msg
@@ -475,13 +476,21 @@ const DynamicVoiceChat = ({
               isNarrated: false,
               id: Date.now(),
             })
-  
+
             lastBotMessageIndex.current = updatedSentences.length - 1
           }
-  
+
           return updatedSentences
         })
-  
+
+        // Accumulate streamed text so we can commit the full message to chatHistory
+        // in one shot at finish_reason, decoupled from the TTS pipeline.
+        if (streamingBotMessageRef.current) {
+          streamingBotMessageRef.current.text += message?.msg || ""
+        } else {
+          streamingBotMessageRef.current = { text: message?.msg || "", id: Date.now() }
+        }
+
         handleScrollToView()
       } else {
         setIsStreamingComplete(true)
@@ -515,24 +524,33 @@ const DynamicVoiceChat = ({
         setTalking(0)
         hasStreamedRef.current = true
         setIsStreamingComplete(true)
-  
-        if (message?.extra_content) {
-          pendingExtraContent.current = message.extra_content
+
+        const streamedMsg = streamingBotMessageRef.current
+        streamingBotMessageRef.current = null
+
+        // Commit the fully streamed bot message to chatHistory immediately, before
+        // TTS runs. This decouples UI display from the audio pipeline entirely.
+        // Guard against replay duplicates (iOS reconnect): skip if a bot message
+        // with identical text already exists in recent history.
+        if (streamedMsg && !(isPopupMode && message?.extra_content?.profile_extracted === true)) {
           const currentHistory = getChatHistory()
-          const lastMsg = currentHistory[currentHistory.length - 1]
-          if (lastMsg?.source === "bot") {
-            const mergedExtraContent = { ...lastMsg.extra_content, ...message.extra_content }
-            setChatHistory(
-              currentHistory.map((c, i) =>
-                i === currentHistory.length - 1 ? { ...c, extra_content: mergedExtraContent } : c
-              )
-            )
+          const lastEntry = currentHistory[currentHistory.length - 1]
+          const isReplayDuplicate = lastEntry?.source === "bot" && lastEntry?.msg === streamedMsg.text
+          if (!isReplayDuplicate) {
+            const botMessage = createMessage({
+              msg: streamedMsg.text,
+              source: "bot",
+              received: true,
+              updated_at: streamedMsg.id,
+            })
+            if (message?.extra_content) {
+              botMessage.extra_content = message.extra_content
+            }
+            setChatHistory([...currentHistory, botMessage])
           }
         }
-        if (
-          isPopupMode &&
-          message?.extra_content?.profile_extracted === true
-        ) {
+
+        if (isPopupMode && message?.extra_content?.profile_extracted === true) {
           completeProfileExtraction()
         }
       }
@@ -980,46 +998,6 @@ const DynamicVoiceChat = ({
       // setIsIntroLoading(false)
     }
   }, [sessionId, flowInfo, introMessage, handleCompanyChatCall])
-
-  /**
-   * Adds bot messages to chat history during streaming
-   * Prevents duplicate messages and manages message state
-   */
-  const handleMessagesForBot = useCallback(
-    sentence => {
-      if (isPopupMode && profileCompletedRef.current) return
-      if (isRecognizing || hasStartedListening || !shouldSendMessage) return
-
-      const chat_history = structuredClone(chatHistory)
-      const lastMessage = chat_history[chatHistory?.length - 1]
-      if (lastMessage?.msg === sentence && lastMessage?.source === "bot") {
-        return
-      }
-
-      const extra_content = pendingExtraContent.current
-      pendingExtraContent.current = null
-
-      if (chat_history[chatHistory?.length - 1]?.source === "bot") {
-        const lastMessage = chat_history[chatHistory?.length - 1]
-        lastMessage.msg += " " + sentence
-        if (extra_content) lastMessage.extra_content = extra_content
-        setChatHistory([...chat_history])
-      } else {
-        setChatHistory([
-          ...chat_history,
-          {
-            ...createMessage({
-              msg: sentence,
-              source: "bot",
-              received: true,
-            }),
-            ...(extra_content && { extra_content }),
-          },
-        ])
-      }
-    },
-    [chatHistory, isPopupMode]
-  )
 
   useEffect(() => {
     if (!isFlowInfoError) return
@@ -2383,17 +2361,6 @@ const DynamicVoiceChat = ({
       }
 
       let storedRoute = botRoute
-
-      if (!hasOverRideId && id !== "intro_msg_id") {
-        handleMessagesForBot(text)
-      }
-
-      if (!speakerEnabled) {
-        setSentences(prev => prev.map(x => ({ ...x, isNarrated: true })))
-        setIsNextAllowed(true)
-        setHasOverRideId(null)
-        return
-      }
 
       if (isMute && !hasOverRideId) {
         setSentences(prev => {
