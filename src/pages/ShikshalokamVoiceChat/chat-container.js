@@ -53,6 +53,11 @@ function ChatContainer() {
 
   useEffect(() => {
     const chat_history = getChatHistory()
+    // Remove unreceived messages on mount (e.g. messages sent right before
+    // a page reload that were never echoed back by the server).
+    // Profile-onboarding messages (saathi_profile) are preserved here so
+    // they survive language changes and navigation during the popup session.
+    // They are only cleared in handleProfilePopupClose once onboarding completes.
     const updated_chat_history = chat_history.filter(chat => chat.received)
     setChatHistory(updated_chat_history)
   }, [])
@@ -83,7 +88,9 @@ function ChatContainer() {
     store.setIntroMessage(null)
     store.setSessionId(null)
     store.setStrandStep(null)
-    store.setChatHistory([])
+    // Clear only profile-onboarding messages; preserve the main chat's history.
+    const currentHistory = store.chatHistory || []
+    store.setChatHistory(currentHistory.filter(msg => msg.flowType !== "saathi_profile"))
 
     try {
       const session = await getSessionDetails()
