@@ -81,6 +81,13 @@ function ChatContainer() {
   }, [accessToken, profileId])
 
   const handleProfilePopupClose = useCallback(async () => {
+    // 1. Hide the popup first — this unmounts the popup's DynamicVoiceChat
+    //    and changes the main DVC's key, causing it to remount fresh.
+    setShowProfilePopup(false)
+
+    // 2. Now clear the store — no other DVC instance is mounted to write back.
+    //    Use a microtask to ensure React has processed the unmount.
+    await Promise.resolve()
     const store = useChatDataLocalStore.getState()
     store.setIsOldChatOpen(false)
     store.setIsNewChatOpen(true)
@@ -88,9 +95,6 @@ function ChatContainer() {
     store.setIntroMessage(null)
     store.setSessionId(null)
     store.setStrandStep(null)
-    // Clear all chat history — the main chat will start fresh with the new
-    // session created below, and any prior main-chat messages for the old
-    // session are no longer relevant.
     store.setChatHistory([])
 
     try {
@@ -98,8 +102,6 @@ function ChatContainer() {
       store.setSessionId(session.sessionid)
     } catch (error) {
       console.error("[handleProfilePopupClose] getSessionDetails failed:", error)
-    } finally {
-      setShowProfilePopup(false)
     }
   }, [])
 

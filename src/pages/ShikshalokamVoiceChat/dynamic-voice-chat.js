@@ -753,12 +753,8 @@ const DynamicVoiceChat = ({
       return null
     }
 
-    // Skip messages from a different flow (e.g. profile onboarding messages
-    // should not appear in the main chat and vice versa).
-    const chatFlowName = chat?.other_params?.flow_name
-    if (chatFlowName && chatFlowName !== storageFlow) {
-      return null
-    }
+
+
 
     // Use translated message if available
     const messageToUse = chat?.translated_message && chat?.translated_message !== "" ? chat?.translated_message : chat?.message
