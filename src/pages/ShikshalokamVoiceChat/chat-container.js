@@ -88,9 +88,10 @@ function ChatContainer() {
     store.setIntroMessage(null)
     store.setSessionId(null)
     store.setStrandStep(null)
-    // Clear only profile-onboarding messages; preserve the main chat's history.
-    const currentHistory = store.chatHistory || []
-    store.setChatHistory(currentHistory.filter(msg => msg.flowType !== "saathi_profile"))
+    // Clear all chat history — the main chat will start fresh with the new
+    // session created below, and any prior main-chat messages for the old
+    // session are no longer relevant.
+    store.setChatHistory([])
 
     try {
       const session = await getSessionDetails()
