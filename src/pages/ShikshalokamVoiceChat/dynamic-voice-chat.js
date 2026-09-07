@@ -549,7 +549,7 @@ const DynamicVoiceChat = ({
       if (message.source === "user") {
         const chat_history = getChatHistory()
         const updated_chat_history = chat_history.map(chat => {
-          if (!chat.received && chat.msg === message.msg) {
+          if (!chat.received && chat.msg === message.msg && (!chat.flowType || chat.flowType === storageFlow)) {
             return { ...chat, received: true }
           }
 
@@ -587,7 +587,8 @@ const DynamicVoiceChat = ({
         // with identical text already exists in recent history.
         if (streamedMsg && !(isPopupMode && message?.extra_content?.profile_extracted === true)) {
           const currentHistory = getChatHistory()
-          const lastEntry = currentHistory[currentHistory.length - 1]
+          const flowHistory = currentHistory.filter(msg => !msg.flowType || msg.flowType === storageFlow)
+          const lastEntry = flowHistory[flowHistory.length - 1]
           const isReplayDuplicate = lastEntry?.source === "bot" && lastEntry?.msg === streamedMsg.text
           if (!isReplayDuplicate) {
             const botMessage = createMessage({
