@@ -5,16 +5,13 @@ import { FiGlobe } from "react-icons/fi"
 import { BiLibrary } from "react-icons/bi"
 import { SOURCE_TYPE, DEFAULT_KB_LOGO, DEFAULT_WEB_LOGO } from "constants/dynamic-chat"
 
-function getSourceIcon(sourceType) {
-  if (sourceType === SOURCE_TYPE.WEB_SEARCH) {
-    return <img src={DEFAULT_WEB_LOGO} className="source-item-logo" alt="Web search source" />
-  }
-  return <img src={DEFAULT_KB_LOGO} className="source-item-logo" alt="Knowledge base source" />
+function getSourceIcon() {
+  return <img src={DEFAULT_WEB_LOGO} className="source-item-logo" alt="Source logo" />
 }
 
 function SourceIcon({ src }) {
   const [imgError, setImgError] = useState(false)
-  if (src.logo && !imgError) {
+  if (src?.logo && !imgError) {
     return (
       <img
         src={src.logo}
@@ -24,7 +21,7 @@ function SourceIcon({ src }) {
       />
     )
   }
-  return getSourceIcon(src.source)
+  return getSourceIcon()
 }
 
 function isValidUrl(urlString) {
@@ -56,8 +53,8 @@ function SourceItem({ src }) {
     <>
       <SourceIcon src={src} />
       <div className="source-item-content">
-        <span ref={titleRef} className="source-item-title" title={src.title}>
-          {src.title}
+        <span ref={titleRef} className="source-item-title" title={src?.title}>
+          {src?.title}
         </span>
       </div>
     </>
@@ -67,7 +64,7 @@ function SourceItem({ src }) {
     <li className={`source-item ${validUrl ? "cursor-pointer" : ""} ${isMultiLine ? "source-item--top" : ""}`}>
       {validUrl ? (
         <a
-          href={src.url}
+          href={src?.url}
           target="_blank"
           rel="noopener noreferrer"
           className="source-item-anchor"
@@ -87,6 +84,7 @@ function SourceItem({ src }) {
  */
 function SourcesPanel({ isOpen, sources = [], isMobile, onClose }) {
   const { t } = useTranslation()
+  const activeSources = Array.isArray(sources) ? sources.filter(Boolean) : []
 
   // Lock body scroll when open on mobile
   useEffect(() => {
@@ -117,11 +115,11 @@ function SourcesPanel({ isOpen, sources = [], isMobile, onClose }) {
           </button>
         </div>
         <div className="sources-panel-body">
-          {sources.length === 0 ? (
+          {activeSources.length === 0 ? (
             <p className="sources-empty">{t("noSources")}</p>
           ) : (
             <ul className="sources-list">
-              {sources.map((src, idx) => (
+              {activeSources.map((src, idx) => (
                 <SourceItem key={idx} src={src} />
               ))}
             </ul>

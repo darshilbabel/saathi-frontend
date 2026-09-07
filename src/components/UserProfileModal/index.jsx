@@ -98,19 +98,52 @@ function UserProfileModal({
 
   const labelStyleClasses = "block text-xs font-semibold text-[#572e91] mb-1"
 
+  const isSubmitDisabled = formFields.some(field => {
+    if (field.type === "split") {
+      const isParentRequired = Boolean(field.required)
+      const subFields = field.fields || []
+      return subFields.some(subField => {
+        const isRequiredField = isParentRequired || Boolean(subField.required)
+        if (isRequiredField) {
+          const val = formValues[subField.id]
+          return !val?.trim()
+        }
+        return false
+      })
+    } else {
+      if (field.required) {
+        const val = formValues[field.id]
+        return !val?.trim()
+      }
+      return false
+    }
+  })
+
+  function showRequired(isRequired) {
+    if (isRequired) return <span className="text-red-500">*</span>
+    return null
+  }
+
   function renderField(field) {
     if (field.type === "split") {
       return (
         <div key={field.id} className="mb-3 sm:mb-4">
           <div className="mb-1">
-            <b className={labelStyleClasses}>{t(field.labelName)}</b>
+            <b className={labelStyleClasses}>
+              {t(field.labelName)}
+              {showRequired(field.required)}
+            </b>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-            {field.fields?.map(subField => (
+            {field.fields?.map(subField => {
+              const isRequiredSubfield = Boolean(field.required || subField.required)
+              return (
               <div key={subField.id} className="w-full">
                 <FormData
                   layOut={subField.layOut || 1}
                   id={subField.id}
+                  isimportant={!field.required && subField.required ? "true" : "false"}
+                  isRequired={isRequiredSubfield}
                   inputType={subField.inputType || "text"}
                   inputName={subField.inputName || subField.id}
                   inputValue={formValues[subField.id] || ""}
@@ -119,7 +152,8 @@ function UserProfileModal({
                   inputClass={inputStyleClasses}
                 />
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )
@@ -132,6 +166,8 @@ function UserProfileModal({
           id={field.id}
           labelName={t(field.labelName)}
           labelClass={labelStyleClasses}
+          isimportant={field.required ? "true" : "false"}
+          isRequired={field.required}
           inputType={field.inputType || "text"}
           inputName={field.inputName || field.id}
           inputValue={formValues[field.id] || ""}
@@ -180,10 +216,10 @@ function UserProfileModal({
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 flex items-center justify-between gap-2 flex-shrink-0 bg-white">
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors py-1"
+            className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-500 hover:text-[#D11F44] hover:bg-[#D11F4433] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            <FiLogOut size={15} />
-            {t("logout")}
+            <FiLogOut size={16} />
+            <span>{t("logout")}</span>
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -194,7 +230,8 @@ function UserProfileModal({
             </button>
             <button
               onClick={() => onSave(formValues)}
-              className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-[#572e91] rounded-lg hover:bg-[#4a2780] transition-colors shadow-sm"
+              disabled={isSubmitDisabled}
+              className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-[#572e91] rounded-lg hover:bg-[#4a2780] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#572e91]"
             >
               {t("save")}
             </button>

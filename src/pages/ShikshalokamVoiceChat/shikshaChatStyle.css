@@ -788,6 +788,7 @@ html, body {
 
 .div47 {
     padding-right: 1rem;
+    margin-left: 13px;
     width: 100%;
     min-width: 0; 
 }
@@ -1490,7 +1491,7 @@ html, body {
 }
 
 .chat-sidebar-user-card:hover {
-  background: #f3eef9;
+  background: transparent;
 }
 
 .chat-sidebar-user-info-btn {
@@ -1505,6 +1506,11 @@ html, body {
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
+  transition: background 0.15s ease;
+}
+
+.chat-sidebar-user-info-btn:hover {
+  background: #f3eef9;
 }
 
 .chat-sidebar-logout-btn {
@@ -1546,8 +1552,8 @@ html, body {
 }
 
 .chat-sidebar-logout-icon-btn:hover {
-  background: #fef2f2;
-  color: #ef4444;
+  background: #D11F4433;
+  color: #D11F44;
 }
 
 .chat-sidebar-logout-icon {

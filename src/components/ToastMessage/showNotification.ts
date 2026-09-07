@@ -12,7 +12,7 @@ const defaultConfig = {
   progress: undefined,
   theme: "colored",
   transition: Bounce,
-  style: { fontWeight: "bold" },
+  style: { fontWeight: "normal" },
 }
 
 export const showNotification = ({

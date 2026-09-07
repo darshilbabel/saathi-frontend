@@ -10,29 +10,33 @@ export const PROFILE_FORM_SCHEMA = {
       labelName: "name",
       inputType: "text",
       placeholder: "name",
+      required: true,
     },
     {
       id: "role",
       labelName: "roleDesignation",
       inputType: "text",
       placeholder: "roleDesignation",
+      required: true,
     },
     {
       id: "school_name",
       labelName: "organisationSchool",
       inputType: "text",
       placeholder: "organisationSchool",
+      required: true,
     },
     {
       id: "location",
       labelName: "location",
       type: "split",
+      required: true,
       fields: [
         {
           id: "state",
-          labelName: "stateText",
+          labelName: "state",
           inputType: "text",
-          placeholder: "stateText",
+          placeholder: "state",
         },
         {
           id: "district",

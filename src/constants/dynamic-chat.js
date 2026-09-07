@@ -24,6 +24,19 @@ export const FEEDBACK_TYPE = {
 }
 
 /**
+ * Feedback payload default structures
+ */
+export const DESELECT_FEEDBACK_PAYLOAD = {
+  thumbs_up: false,
+  thumbs_down: false,
+  comment: "",
+}
+
+export const FEEDBACK_PAYLOAD = {
+  DESELECT: DESELECT_FEEDBACK_PAYLOAD,
+}
+
+/**
  * Chat source search type identifiers
  */
 export const SOURCE_TYPE = {
