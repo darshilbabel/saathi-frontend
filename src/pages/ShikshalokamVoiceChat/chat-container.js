@@ -65,6 +65,7 @@ function ChatContainer() {
 
   // Check if profile onboarding is needed
   useEffect(() => {
+    setProfileCheckDone(false)
     if (!accessToken || !profileId) {
       setProfileCheckDone(true)
       return
