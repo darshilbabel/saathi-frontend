@@ -2161,11 +2161,6 @@ const DynamicVoiceChat = ({
 
   return (
     <>
-      {accessToken && !isTokenValidated && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[#faf6fb]">
-          <BiLoader className="loader-rotate-loader text-4xl text-[#572e91]" />
-        </div>
-      )}
       <div style={hasActiveFlexLayout ? { display: "flex", flexDirection: "row", height: isPopupMode ? "100%" : "100dvh", overflow: "hidden", position: "relative" } : undefined}>      {/* ===== CHAT HISTORY SIDEBAR (popup mode, non-profile flows) ===== */}
       {showHistorySidebar && (
         <>
@@ -2297,7 +2292,7 @@ const DynamicVoiceChat = ({
             </div>
           </div>
         )}
-      {(isInitialising || isLoading || (!introMessageData && !introMessage)) && (
+      {(isInitialising || isLoading || (!introMessageData && !introMessage) || (!isPopupMode && accessToken && !isTokenValidated)) && (
         <div className={isPopupMode ? undefined : "loader-load-spinner"} style={isPopupMode ? { display: "flex", justifyContent: "center", alignItems: "center", width: "100%", flex: 1 } : undefined}>
           <div className="div67">
             <BiLoader className="loader-rotate-loader loader-icon" />
