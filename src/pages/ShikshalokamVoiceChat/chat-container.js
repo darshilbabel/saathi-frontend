@@ -30,6 +30,7 @@ function ChatContainer() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [showProfilePopup, setShowProfilePopup] = useState(false)
+  const [profileCheckDone, setProfileCheckDone] = useState(false)
 
   const chatLanguage = useSiteDataSessionStore(state => state.chatLanguage)
   const ipFetched = useUserStorage()(state => state.ipFetched)
@@ -64,9 +65,15 @@ function ChatContainer() {
 
   // Check if profile onboarding is needed
   useEffect(() => {
-    if (!accessToken || !profileId) return
+    if (!accessToken || !profileId) {
+      setProfileCheckDone(true)
+      return
+    }
     const acceptedTnC = useUserDataLocalStore.getState().has_accepted_tnc
-    if (acceptedTnC !== true) return
+    if (acceptedTnC !== true) {
+      setProfileCheckDone(true)
+      return
+    }
 
     ;(async () => {
       try {
@@ -76,6 +83,8 @@ function ChatContainer() {
         }
       } catch (error) {
         console.error("[ChatContainer] profile check failed:", error)
+      } finally {
+        setProfileCheckDone(true)
       }
     })()
   }, [accessToken, profileId])
@@ -146,12 +155,12 @@ function ChatContainer() {
   return (
     <>
       <div style={showProfilePopup ? { filter: "blur(10px)", pointerEvents: "none", position: "fixed", inset: 0, overflow: "hidden" } : undefined}>
-        {accessToken && !isLoading && <DynamicVoiceChat key={showProfilePopup ? "onboarding" : "main"} />}
+        {accessToken && !isLoading && profileCheckDone && <DynamicVoiceChat key={showProfilePopup ? "onboarding" : "main"} />}
       </div>
       {showProfilePopup && (
         <ProfileChatPopup isOpen={showProfilePopup} onClose={handleProfilePopupClose} />
       )}
-      {(isLoading || !ipFetched) && (
+      {!showProfilePopup && (isLoading || !ipFetched || !profileCheckDone) && (
         <div className="loader-load-spinner">
           <div className="div67">
             <BiLoader className="loader-rotate-loader loader-icon" />
