@@ -47,6 +47,23 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <script>
+      // Force reload on back/forward navigation when user is authenticated.
+      // Browsers may serve a disk-cached page (not bfcache) on back-navigation,
+      // showing a stale login screen even though localStorage has a valid token.
+      // This runs before React mounts so the stale page is never visible.
+      (function () {
+        try {
+          var nav = performance.getEntriesByType('navigation')[0];
+          if (nav && nav.type === 'back_forward') {
+            var stored = JSON.parse(localStorage.getItem('userData') || '{}');
+            if (stored && stored.state && stored.state.access_token) {
+              window.location.reload();
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <!--
       This HTML file is a template.

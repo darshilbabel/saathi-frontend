@@ -51,9 +51,18 @@ function CommonHomePage() {
     }
   })
 
-  const showLanding =
-    !Boolean(accessToken) &&
-    !isTokenValidating
+  const showLanding = useMemo(() => {
+    if (accessToken) return false
+    if (isTokenValidating) return false
+    // Final guard: even if Zustand state is stale, never show login when
+    // localStorage actually has a token (e.g. after bfcache restore or
+    // when persist hydration hasn't propagated to React state yet).
+    try {
+      const stored = JSON.parse(localStorage.getItem("userData") || "{}")
+      if (stored?.state?.access_token) return false
+    } catch { /* ignore */ }
+    return true
+  }, [accessToken, isTokenValidating])
 
   const navigate = useNavigate()
 
